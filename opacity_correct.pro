@@ -96,33 +96,29 @@ incrMJD = mjd_int / (60.0 * 24.0) ; increment every mjd_int minutes
 
 getatmos_arr, obs_freq,startMJD,stopMJD,incrMJD,tau_0_arr,mjd_arr    
 
-for i = 0, nrecords() - 1 do begin
+scans = get_scan_numbers(/unique)
+for i = 0, n_elements(scans) - 1 do begin
+   chunk = getchunk(scan=scans[i],count=nchunk)
+   for j = 0, nchunk - 1 do begin
+      set_data_container, chunk[j]
+      
+      ;; calculate the opacity
+      if n_elements(tau_0_arr) eq 1 then begin
+         tau_0 = tau_0_arr
+      endif else begin
+         tau_0 = interpol(tau_0_arr,mjd_arr,!g.s[0].mjd)
+      endelse
 
-    getrec, i
-    
-    ;; calculate the opacity
-    if n_elements(tau_0_arr) eq 1 then begin
-       tau_0 = tau_0_arr
-    endif else begin
-       tau_0 = interpol(tau_0_arr,mjd_arr,!g.s[0].mjd)
-    endelse
-
-       
-;    print, tau_0
-
-    ;; get the airmass. For angles less than 60deg, then A = sec z =
-    ;; 1/cos(z) = 1/cos (90-elev)
-    A = 1/cos((90.0 - !g.s[0].elevation) * !dpi/180.0)
-   
-    coeff = exp(tau_0 * A) / mb_eff
-
-    scale, coeff
-
-    ;show
-
-    ;stop
-    keep
-
+      ;; get the airmass. For angles less than 60deg, then A = sec z =
+      ;; 1/cos(z) = 1/cos (90-elev)
+      A = 1/cos((90.0 - !g.s[0].elevation) * !dpi/180.0)
+      
+      coeff = exp(tau_0 * A) / mb_eff   
+      scale, coeff
+      data_copy, !g.s[0],chunk[j]
+   endfor
+   putchunk, chunk
+   data_free, chunk
 endfor
 
 fileout,'junk.fits'

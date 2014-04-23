@@ -49,11 +49,16 @@ nregion, myregion
 nfit, myorder
 
 ;; going through scans and baseline subtracting
-print, 'Baseline subtraction order ', myorder
-for j = 0, nrecords() - 1 do begin
-    getrec, j
-    baseline
-    keep
+scans = get_scan_numbers(/unique)
+for i = 0, n_elements(scans) - 1 do begin
+   chunk = getchunk(scan=scans[i],count=nchunk)
+   for j = 0, nchunk - 1 do begin
+      set_data_container, chunk[j]
+      baseline
+      data_copy, !g.s[0],chunk[j]
+   endfor
+   putchunk, chunk
+   data_free, chunk
 endfor
 
 fileout,'junk.fits'

@@ -43,6 +43,7 @@ print, 'Output file: ', myfileout
 fileout, myfileout
 
 print, 'Gaussian smoothing by ', mynchan
+
 scans = get_scan_numbers(/unique)
 for i = 0, n_elements(scans) - 1 do begin
    chunk = getchunk(scan=scans[i],count=nchunk)
