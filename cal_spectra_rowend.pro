@@ -92,64 +92,62 @@ map_nifs = myinfo.n_ifs
 
 for i = 0, n_elements(mapscans) - 1 do begin
 
-    setfind, 'scan', mapscans[i]
-    setfind, 'plnum', plnum
-    setfind, 'ifnum', ifnum
+   ;; get offs
+   offlist = indgen(2*noffs)
+   offlist[noffs:2*noffs-1] =  map_nint - reverse(indgen(noffs) ) - 1
+   offchunk = getchunk(scan=mapscans[i], $
+                       plnum=plnum, $
+                       ifnum=ifnum, $
+                       fdnum=fdnum, $
+                       int=offlist, count=noffchunks)
+   sclear
+   for j = 0, noffchunks -1 do accum, dc=offchunk[j]
+   ave
 
-    setfind, 'int', '0:'+string(noffs)
-    setfind, 'int', (map_nint - noffs - 1),(map_nint-1),/append
-    setfind, 'fdnum', fdnum
+   data_free, offchunk
+   
+   ;; copy the off to a dc
+   copy, 0, 1
+   off = getdata(0)
 
-    ; output the find parameters so I can check the results
-;    listfind
-    
-    ; get the off scans and average them
-    find
-    avgstack
+   tsysvec=gain*off             ;; probably want to specify the gain per beam
+   vtsys = median(tsysvec)
 
-    ; copy the off to a dc
-    copy, 0, 1
-    off = getdata(0)
+   ; get all the integrations for a row.
+   rowchunk = getchunk(scan=mapscans[i], $
+                       plnum=plnum, $
+                       ifnum=ifnum, $
+                       fdnum=fdnum, $
+                       count=nrowchunks)
 
-    tsysvec=gain*off ; probably want to specify the gain per beam
-    vtsys = median(tsysvec)
-
-    ; clear everything for next interation
-    emptystack
-
-    ; now go through the integrations and calibrate the ons.
-    for j = 0, map_nint - 1 do begin
+   ;; now go through the integrations and calibrate the ons.
+   for j = 0, nrowchunks - 1 do begin
         
-        ; find the right integration
-        setfind, 'int', j
-;        listfind
-        find
+      set_data_container, rowchunk[j]
         
-        ; copy the integration to the main dc
-        getrec, astack(0)
+      ;; calculate the Ta
+      copy, 0, 2
+      subtract, 2, 1
+      divide, 0, 1
         
-        ; calculate the Ta
-        copy, 0, 2
-        subtract, 2, 1
-        divide, 0, 1
+      ;; put calibrated data back in main dc
+      vec = getdata(0)
+      vec1 = vtsys * vec
         
-        ; put calibrated data back in main dc
-        vec = getdata(0)
-        vec1 = vtsys * vec
-        
-        !g.s[0].units='Ta'
-        !g.s[0].tsys=vtsys
-        setdata,vec1
+      !g.s[0].units='Ta'
+      !g.s[0].tsys=vtsys
+      setdata,vec1
 
-        ; save to the output file
-        keep
+      data_copy, !g.s[0], rowchunk[j]
 
-        ; reset for next
-        emptystack
+   endfor  
 
-    endfor
-        
+   putchunk, rowchunk
+   data_free, rowchunk
+
 endfor
+
+
 
 sprotect_on
 

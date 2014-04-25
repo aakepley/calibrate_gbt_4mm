@@ -34,8 +34,6 @@ if n_elements(mynchan) eq 0 then begin
    return
 endif
 
-if n_elements(nscan) eq 0 then nscan = 10
-
 print, 'Input file: ', myfilein
 filein, myfilein
 

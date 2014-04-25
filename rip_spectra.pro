@@ -44,37 +44,37 @@ endfor
 
 nspectra = total(nints)
 filein,infiles[0]
-myscans = get_scan_numbers()
-myinfo = scan_info(myscans[0])
-nchan = myinfo.n_channels
-
-; Creating the arrays to hold the output spectra
-ra = dblarr(nspectra)
-dec = dblarr(nspectra)
-velocity = dblarr(nspectra, nchan)
 
 ; now go back into files and get the spectra.
 for i = 0, nfiles - 1 do begin
 
     filein, infiles[i]
 
-    for j = 0, nints[i] - 1 do begin
-        
-        case i of
-            0: startint = 0
-            1: startint = nints[0]
-            else: startint = total(nints[0:i-1])
-        endcase
+    scans = get_scan_numbers(/unique)
 
-        getrec, j
-        print, j,  !g.s[0].longitude_axis, !g.s[0].latitude_axis
-        ra[j+startint] = !g.s[0].longitude_axis
-        dec[j+startint] = !g.s[0].latitude_axis
-        velocity[j+startint, * ] = *!g.s[0].data_ptr        
+    for j = 0, n_elements(scans) - 1 do begin
+
+       row = getchunk(scan=scans[j],count=rowints)
+       
+       ; if first data, initialize vectors. Otherwise add to them.
+       if i eq 0 and j eq 0 then begin
+          ra = row.longitude_axis
+          dec = row.latitude_axis
+          velocity = *row[0].data_ptr
+          for k = 1, rowints - 1 do velocity = [[velocity],[*row[k].data_ptr]]
+       endif else begin
+          ra = [ra, row.longitude_axis]
+          dec = [dec, row.latitude_axis]
+          for k = 0, rowints - 1 do velocity = [[velocity],[*row[k].data_ptr]]
+       endelse
+
+       data_free, row
 
     endfor
 
 endfor
+
+velocity = transpose(velocity)
 
 ; Saving the resulting arrays in a savefile
 save, ra, dec, velocity, filename=savefile        
