@@ -39,7 +39,7 @@ good = where(ra ne 0 and dec ne 0 ,count)
 xctr = mean(ra[good])
 yctr = mean(dec[good])
 
-xsize = max(ra[good]) - min(ra[good])
+xsize = max(ra[good]) - min(ra[good])*cos(yctr*!DtoR)
 ysize = max(dec[good]) - min(dec[good])
 
 if n_elements(beam_fwhm) eq 0 then begin

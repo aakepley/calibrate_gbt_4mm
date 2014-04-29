@@ -24,6 +24,11 @@ find
 
 n_stack = n_elements(astack())
 
+if n_stack le 0 then begin
+   message, 'No spectra selected'
+   return
+endif
+
 unfreeze
 for i = 0, n_stack - 1 do begin
     getrec, astack(i)

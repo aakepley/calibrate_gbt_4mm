@@ -2,7 +2,7 @@
 
 pro cal_spectra_rowend,infile, outfile,$
                        ifnum=ifnum,plnum=plnum,fdnum=fdnum, gain=gain,$
-                       noffs=noffs,declatmap=declatmap
+                       noffs=noffs
 
 ; Purpose: do the initial calibration of the spectrum (ON-OFF) for
 ; each ifnum and polarization. This calibration uses the ends of the
@@ -21,9 +21,7 @@ pro cal_spectra_rowend,infile, outfile,$
 ;
 ;       gain: gain for particular channel from calseq_sp_4mm
 ;
-;       declatmap: if not set or zero then process as
-;       RALongMap. Otherwise process as DecLatMap.
-;
+
 ; Method:
 ;       The channel outputs for the W-band receiver (as of Winter
 ;       2013) are 
@@ -67,11 +65,8 @@ fileout, outfile
 sprotect_off
 
 ; Get which scans are in the map. 
-if not declatmap then begin
-   mapscans = get_scan_numbers(count, procedure='RALongMap')
-endif else begin
-   mapscans = get_scan_numbers(count, procedure='DecLatMap')
-endelse
+mapscans = get_scan_numbers(count, procedure='RALongMap')
+if count eq 0 then mapscans = get_scan_numbers(count, procedure='DecLatMap')
 
 ; check to make sure we have a map
 if count eq 0 then begin
