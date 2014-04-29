@@ -128,12 +128,18 @@ for i = 0, n_elements(mapscans) - 1 do begin
       ;; put calibrated data back in main dc
       vec = getdata(0)
       vec1 = vtsys * vec
-        
-      !g.s[0].units='Ta'
-      !g.s[0].tsys=vtsys
+      
+      ;!g.s[0].units='Ta'
+      ;!g.s[0].tsys=vtsys    
+
       setdata,vec1
 
+      ;; Is this working? I might have to reset the units and tsys in
+      ;; rowchunk instead of !g.s[0]
       data_copy, !g.s[0], rowchunk[j]
+
+      rowchunk[j].units='Ta'
+      rowchunk[j].tsys=vtsys    
 
    endfor  
 
