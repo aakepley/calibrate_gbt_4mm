@@ -1,4 +1,4 @@
-pro rip_spectra, infiles, savefile
+pro rip_spectra, infiles, savefile, droplast=droplast
 
 ; Purpose: Take RA, Dec, and Spectra for each position
 
@@ -31,7 +31,10 @@ endif
 if n_elements(savefile) eq 0 then begin
     message,/info,"Please give the name of a save file to save the resulting arrays in"
     return
-endif
+ endif
+
+; drop last integration, which might be bad.
+if n_elements(droplast) eq 0 then droplast = 1
 
 ; figures out the number of records in each file.
 nfiles = n_elements(infiles)
@@ -56,16 +59,18 @@ for i = 0, nfiles - 1 do begin
 
        row = getchunk(scan=scans[j],count=rowints)
        
+       if droplast then lastint = rowints - 2 else lastint = rowints-1
+       
        ; if first data, initialize vectors. Otherwise add to them.
        if i eq 0 and j eq 0 then begin
           ra = row.longitude_axis
           dec = row.latitude_axis
           velocity = *row[0].data_ptr
-          for k = 1, rowints - 1 do velocity = [[velocity],[*row[k].data_ptr]]
+          for k = 1, lastint do velocity = [[velocity],[*row[k].data_ptr]]
        endif else begin
           ra = [ra, row.longitude_axis]
           dec = [dec, row.latitude_axis]
-          for k = 0, rowints - 1 do velocity = [[velocity],[*row[k].data_ptr]]
+          for k = 0, lastint do velocity = [[velocity],[*row[k].data_ptr]]
        endelse
 
        data_free, row

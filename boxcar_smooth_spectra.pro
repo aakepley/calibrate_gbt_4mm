@@ -16,6 +16,7 @@ pro boxcar_smooth_spectra, myfilein, myfileout, mynchan
 ;----------------------------------------------------------------------
 ; 7/23/2012     A.A. Kepley             Original Code
 ; 5/7/2013      A.A. Kepley             Modified for pipeline
+; 6/7/2016      A.A. Kepley             modified to use getchunk and putchunk
 
 if n_elements(myfilein) eq 0 then begin
     message,/info,"Please give file to process."
@@ -38,13 +39,29 @@ filein, myfilein
 print, 'Output file: ', myfileout
 fileout, myfileout
 
-;; getting number of scans
-print, 'boxcar smoothing by ', mynchan
-for j = 0, nrecords() - 1 do begin
-    getrec, j
-    boxcar, mynchan,/decimate
-    keep
+freeze 
+
+scans = get_scan_numbers(/unique)
+
+for i = 0, n_elements(scans) - 1 do begin
+
+   chunk = getchunk(scan=scans[i],count=nchunk)
+
+   for j = 0, nchunk -1 do begin
+      
+      tmp  = chunk[j]
+
+      dcboxcar,tmp,mynchan,/decimate
+
+      chunk[j] = tmp
+
+   endfor
+
+   putchunk,chunk
+   data_free,chunk
+
 endfor
+
 
 fileout, 'junk.fits'
 

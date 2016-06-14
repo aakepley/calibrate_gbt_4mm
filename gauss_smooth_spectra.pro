@@ -17,7 +17,10 @@ pro gauss_smooth_spectra, myfilein, myfileout, mynchan
 ; 7/23/2012     A.A. Kepley             Original Code
 ; 5/7/2013      A.A. Kepley             Modified for pipeline
 ; 4/22/2014     A.A. Kepley             Modified to use getchunk and
-;                                       putchunk for better performance
+;                                       putchunk for better
+;                                       performance
+; 6/7/2016      A.A. Kepley             Modified getchunk and putchunk
+;                                       so that frequency axis is correct.
 
 if n_elements(myfilein) eq 0 then begin
     message,/info,"Please give file to process."
@@ -43,15 +46,30 @@ fileout, myfileout
 print, 'Gaussian smoothing by ', mynchan
 
 scans = get_scan_numbers(/unique)
+
 for i = 0, n_elements(scans) - 1 do begin
+
    chunk = getchunk(scan=scans[i],count=nchunk)
-   for j = 0, nchunk - 1 do begin
-      set_data_container, chunk[j]
-      gsmooth, mynchan,/decimate
-      data_copy, !g.s[0],chunk[j]
+
+   for j = 0, nchunk -1 do begin
+      
+      tmp  = chunk[j]
+
+      dcsmooth,tmp,mynchan,/decimate,ok=ok
+
+      if not ok then begin
+         message, 'Gaussian smoothing failed on index ', i
+         data_free, chunk
+         return
+      endif
+
+      chunk[j] = tmp
+
    endfor
-   putchunk, chunk
-   data_free, chunk
+
+   putchunk,chunk
+   data_free,chunk
+
 endfor
 
 fileout, 'junk.fits'

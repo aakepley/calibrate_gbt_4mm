@@ -1,7 +1,8 @@
 pro make_map, savefile, fitsfile, $
               headerfile,$
               beam_fwhm=beam_fwhm,$
-              pix_per_beam=pix_per_beam
+              pix_per_beam=pix_per_beam, $
+              _Extra=extra
               
 
 ;; Purpose: create a fits image from a save file full of spectra.
@@ -15,16 +16,34 @@ pro make_map, savefile, fitsfile, $
 ;; Date         Programmer              Description of Changes
 ;; ----------------------------------------------------------------------
 ;; 5/10/2013    A.A. Kepley             Original Code
+;; 7/17/2014    A.A. Kepley             Updating to dealin with
+;;                                      multiple save files
 
 ; checking inputs
 if n_params(make_map) ne 3 then begin
     message,/info,"make_map,savefile,fitsfile,headerfile"
+ endif
+
+; opening save files
+restore,savefile[0]
+
+if n_elements(savefile) gt 1 then begin
+
+   ra_orig = ra
+   dec_orig = dec
+   velocity_orig = velocity
+   for i = 1, n_elements(savefile) -1 do begin
+      restore, savefile[i],/verb
+      ra_orig = [ra,ra_orig]
+      dec_orig = [dec,dec_orig]
+      velocity_orig = [velocity,velocity_orig]
+   endfor
+
+   ra = ra_orig
+   dec = dec_orig
+   velocity = velocity_orig
+
 endif
-
-
-
-; opening files
-restore,savefile
 
 ; Creating Header
 filein, headerfile
@@ -39,7 +58,7 @@ good = where(ra ne 0 and dec ne 0 ,count)
 xctr = mean(ra[good])
 yctr = mean(dec[good])
 
-xsize = max(ra[good]) - min(ra[good])*cos(yctr*!DtoR)
+xsize = (max(ra[good]) - min(ra[good]))*cos(yctr*!DtoR)
 ysize = max(dec[good]) - min(dec[good])
 
 if n_elements(beam_fwhm) eq 0 then begin
@@ -98,7 +117,7 @@ sxaddpar, hdr, 'BUNIT', 'K', 'Tmb'
 ; Gridding
 
 
-grid_otf, data=velocity[good,*], ra=ra[good], dec=dec[good],target_hdr=hdr,out_root=fitsfile
+grid_otf, data=velocity[good,*], ra=ra[good], dec=dec[good],target_hdr=hdr,out_root=fitsfile,_Extra=extra
 
 
 end

@@ -68,6 +68,7 @@ pro opacity_correct, myinfile, myoutfile, mb_eff, mjd_int=mjd_int
 ;; Date         Programmer              Description of Changes
 ;;----------------------------------------------------------------------
 ;; 5/7/2013     A.A. Kepley             Original Code
+;; 6/7/2016     A.A. KEpley             updating type of integer for loop
 
 if n_params() ne 3 then begin
     message,/info,"opacity_correct,myinfile,myoutfile,mb_eff"
@@ -97,14 +98,14 @@ incrMJD = mjd_int / (60.0 * 24.0) ; increment every mjd_int minutes
 getatmos_arr, obs_freq,startMJD,stopMJD,incrMJD,tau_0_arr,mjd_arr    
 
 scans = get_scan_numbers(/unique)
-for i = 0, n_elements(scans) - 1 do begin
+for i = 0L, n_elements(scans) - 1 do begin
    chunk = getchunk(scan=scans[i],count=nchunk)
    for j = 0, nchunk - 1 do begin
       set_data_container, chunk[j]
       
       ;; calculate the opacity
       if n_elements(tau_0_arr) eq 1 then begin
-         tau_0 = tau_0_arr
+         tau_0 = tau_0_arr[0]
       endif else begin
          tau_0 = interpol(tau_0_arr,mjd_arr,!g.s[0].mjd)
       endelse
