@@ -1,4 +1,4 @@
-pro rip_spectra, infiles, savefile, droplast=droplast
+pro rip_spectra, infiles, savefile, droplast=droplast, chanrange=chanrange
 
 ; Purpose: Take RA, Dec, and Spectra for each position
 
@@ -20,7 +20,9 @@ pro rip_spectra, infiles, savefile, droplast=droplast
 ; ----------------------------------------------------------------------
 ; 7/23/2012     A.A. Kepley             Original Code
 ; 5/10/2013     A.A. Kepley             Modified to allow each map to
-;                                       have a different number of integrations
+;                                       have a different number of
+;                                       integrations
+; 8/11/2016     A.A. Kepley             Fixed bug with nints.
 
 ; check inputs
 if n_elements(infiles) eq 0 then begin
@@ -43,10 +45,19 @@ nints = intarr(n_elements(infiles))
 for i = 0, nfiles - 1 do begin    
     filein,infiles[i]
     nints[i] = nrecords()
+    
 endfor
 
 nspectra = total(nints)
 filein,infiles[0]
+scans = get_scan_numbers(/unique)
+sinfo = scan_info(scans[0])
+nchan = sinfo.n_channels[0]
+
+if n_elements(chanrange) eq 0 then begin
+   chanrange = [0,nchan-1]
+   print, 'chanrange set to', chanrange
+endif
 
 ; now go back into files and get the spectra.
 for i = 0, nfiles - 1 do begin
@@ -63,14 +74,25 @@ for i = 0, nfiles - 1 do begin
        
        ; if first data, initialize vectors. Otherwise add to them.
        if i eq 0 and j eq 0 then begin
-          ra = row.longitude_axis
-          dec = row.latitude_axis
-          velocity = *row[0].data_ptr
-          for k = 1, lastint do velocity = [[velocity],[*row[k].data_ptr]]
+          ra = (row.longitude_axis)[0:lastint]
+          dec = (row.latitude_axis)[0:lastint]
+
+          velocity = (*row[0].data_ptr)[chanrange[0]:chanrange[1]]
+
+          for k = 1, lastint do begin
+             velocity_tmp = (*row[k].data_ptr)[chanrange[0]:chanrange[1]]
+             velocity = [[velocity],[velocity_tmp]]
+          endfor 
+
        endif else begin
-          ra = [ra, row.longitude_axis]
-          dec = [dec, row.latitude_axis]
-          for k = 0, lastint do velocity = [[velocity],[*row[k].data_ptr]]
+          ra = [ra, (row.longitude_axis)[0:lastint]]
+          dec = [dec, (row.latitude_axis)[0:lastint]]
+
+          for k = 0, lastint do begin
+             velocity_tmp = (*row[k].data_ptr)[chanrange[0]:chanrange[1]]
+             velocity = [[velocity],[velocity_tmp]]
+          endfor
+
        endelse
 
        data_free, row

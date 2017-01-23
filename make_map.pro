@@ -2,6 +2,7 @@ pro make_map, savefile, fitsfile, $
               headerfile,$
               beam_fwhm=beam_fwhm,$
               pix_per_beam=pix_per_beam, $
+              chanrange=chanrange,$
               _Extra=extra
               
 
@@ -16,8 +17,9 @@ pro make_map, savefile, fitsfile, $
 ;; Date         Programmer              Description of Changes
 ;; ----------------------------------------------------------------------
 ;; 5/10/2013    A.A. Kepley             Original Code
-;; 7/17/2014    A.A. Kepley             Updating to dealin with
+;; 7/17/2014    A.A. Kepley             Updating to deal with
 ;;                                      multiple save files
+;; 8/11/2016    A.A. Kepley             added chanrange parameter
 
 ; checking inputs
 if n_params(make_map) ne 3 then begin
@@ -94,30 +96,41 @@ sxaddpar, hdr, 'CRVAL1', xctr
 sxaddpar, hdr, 'CRPIX1', nxpix/2
 sxaddpar, hdr, 'CDELT1', -1.0*pix_scale
 
-
 sxaddpar, hdr, 'CTYPE2', 'DEC--TAN'
 sxaddpar, hdr, 'CRVAL2', yctr
 sxaddpar, hdr, 'CRPIX2', nypix/2
 sxaddpar, hdr, 'CDELT2', pix_scale
 
+ref_freq_frame = !g.s[0].reference_frequency * $
+                 sqrt((!gc.light_speed + !g.s[0].frame_velocity)/$
+                      (!gc.light_speed - !g.s[0].frame_velocity))
+freq_int_frame = !g.s[0].frequency_interval * $
+                 sqrt((!gc.light_speed + !g.s[0].frame_velocity)/$
+                      (!gc.light_speed - !g.s[0].frame_velocity))
 
+case !g.s[0].velocity_definition of
+   'RADI-LSR' : specsys ='LSRK'
+   'OPTI-BAR' : specsys = 'BARY' 
+    else : print, "velocity definition not found"
+endcase
 
 sxaddpar, hdr, 'CTYPE3', 'FREQ'
 sxaddpar, hdr, 'CUNIT3', 'Hz'
-sxaddpar, hdr, 'CRVAL3', !g.s[0].reference_frequency
-sxaddpar, hdr, 'CRPIX3', !g.s[0].reference_channel+1.0 ;; confused about having to add one here, but makes everything line up.
-sxaddpar, hdr, 'CDELT3', !g.s[0].frequency_interval
-sxaddpar, hdr, 'RESTFREQ', !g.s[0].line_rest_frequency
+sxaddpar, hdr, 'CRVAL3', ref_freq_frame
 
-sxaddpar, hdr, 'EQUINOX', 2000
+sxaddpar, hdr, 'CRPIX3', !g.s[0].reference_channel+1.0 - chanrange[0];; confused about having to add one here, but makes everything line up.
+sxaddpar, hdr, 'CDELT3', freq_int_frame
+sxaddpar, hdr, 'RESTFRQ', !g.s[0].line_rest_frequency
+
+sxaddpar, hdr, 'SPECSYS',specsys
+
+sxaddpar, hdr, 'EQUINOX', 2000.0
 sxaddpar, hdr, 'BMAJ', beam_fwhm
 sxaddpar, hdr, 'BMIN', beam_fwhm
 sxaddpar, hdr, 'BUNIT', 'K', 'Tmb'
 
 ; Gridding
 
-
 grid_otf, data=velocity[good,*], ra=ra[good], dec=dec[good],target_hdr=hdr,out_root=fitsfile,_Extra=extra
-
 
 end

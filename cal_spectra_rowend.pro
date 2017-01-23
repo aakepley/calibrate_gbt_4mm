@@ -43,7 +43,6 @@ if n_elements(ifnum) eq 0 then ifnum = 0
 if n_elements(plnum) eq 0 then plnum = 0
 if n_elements(fdnum) eq 0 then fdnum = 0
 if n_elements(noffs) eq 0 then noffs = 5
-if n_elements(declatmap) eq 0 then declatmap = 0
 
 if n_elements(gain) eq 0 then begin
    message, "Please give a valid gain."

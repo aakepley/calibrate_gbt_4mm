@@ -27,6 +27,8 @@ pro calc_mb_eff, myinfile, cal_scans, calwheel_scans, S_nu,$
 ; Date          Programmer              Description of Changes
 ;----------------------------------------------------------------------
 ; 5/8/2013      A.A. Kepley             Original Code
+;;6/15/2016     A.A. Kepley             Removed warning about cal
+;;                                      scans coming in sets of three since they don't any more.
 
 ;; Check and setup the parameters
 if n_params() ne 4 then begin
@@ -34,17 +36,16 @@ if n_params() ne 4 then begin
     return
 endif
 
-if ((size(calwheel_scans))[1] ne 3) then begin
-    message,/info, "Cal wheel scans come in sets of three"
-    return
-endif
+;; not any more
+;; if ((size(calwheel_scans))[1] ne 3) then begin
+;;     message,/info, "Cal wheel scans come in sets of three"
+;;     return
+;; endif
 
 if n_elements(ifnum) eq 0 then ifnum=0
 if n_elements(twarm) eq 0 then twarm=280 ;K
 if n_elements(tcold) eq 0 then tcold=50 ; K
 if n_elements(fdnum) eq 0 then fdnum=0
-
-
 
 if n_elements(myoutfile) ne 0 then begin
     fileout,myoutfile
@@ -54,7 +55,13 @@ endif else dokeep=0
 filein, myinfile
 
 ; calculate the gains
-n_calwheel_scans = (size(calwheel_scans))[0]
+if (size(test))[1] eq 3 then  begin
+   n_calwheel_scans = (size(calwheel_scans))[0]
+   old_school = 1
+endif else begin
+   n_calwheel_scans = n_elements(calwheel_scans)
+   old_school = 0
+endelse
 
 avggain = dblarr(4)
 
@@ -64,7 +71,12 @@ if n_calwheel_scans eq 1 then begin
 endif else begin
     mygains = dblarr(4,n_calwheel_scans)
     for i = 0, n_calwheel_scans - 1 do begin
-        mygains[*,i] = calseq_sp_4mm(calwheel_scans[*,i],twarm=twarm,tcold=tcold,ifnum=ifnum)
+       if old_school then begin
+          mygains[*,i] = calseq_sp_4mm(calwheel_scans[*,i],twarm=twarm,tcold=tcold,ifnum=ifnum)
+       endif else begin
+          mygains[*,i] = calseq_sp_4mm(calwheel_scans[i],twarm=twarm,tcold=tcold,ifnum=ifnum)
+       endelse
+
     endfor
     avggain = total(mygains,2) / n_calwheel_scans
 endelse

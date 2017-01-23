@@ -13,6 +13,7 @@ function calseq_sp_4mm,cal_wheel_scans,twarm=twarm,tcold=tcold,ifnum=ifnum
 ; ----------------------------------------------------------------------
 ; ?             Dave Frayer     Original Code
 ; 5/6/2013      A. Kepley       Modified to return an array of gains.
+; 6/15/2016     A. Kepley       Modified to deal with single cal wheel scan.
 
 if (n_elements(ifnum) eq 0) then ifnum = 0
 if (n_elements(twarm) eq 0) then twarm = 280
@@ -24,46 +25,91 @@ if (n_elements(tcold) eq 0) then tcold = 50
 ;;Actual twarm can be found on the Rx cleo page (~280K typical)
 ;;(twarm colder in the winter months)
 
-if n_elements(cal_wheel_scans) ne 3 then begin
-    message,/info,"cal_wheel_scans must have 3 elements"
-    return,-1
-endif
-
-sky = cal_wheel_scans[0]
-cold1 = cal_wheel_scans[1] 
-cold2 = cal_wheel_scans[2] 
-
-;;Get sky ch1,ch3,ch5,ch7 for ifnum
-gettp,sky,plnum=0,fdnum=0,ifnum=ifnum
-vec1=getdata(0)
-gettp,sky,plnum=1,fdnum=0,ifnum=ifnum
-vec3=getdata(0)
-gettp,sky,plnum=0,fdnum=1,ifnum=ifnum
-vec5=getdata(0)
-gettp,sky,plnum=1,fdnum=1,ifnum=ifnum
-vec7=getdata(0)
+if n_elements(cal_wheel_scans) ne 3 and n_elements(cal_wheel_scans) ne 1 then begin
+   message,/info,"cal_wheel_scans must have 3 elements or 1 element"
+   return,-1
+end
 
 
-;;Get cold1 ch1,ch3,ch5,ch7 for ifnum
-gettp,cold1,plnum=0,fdnum=0,ifnum=ifnum
-vec1c1=getdata(0)
-gettp,cold1,plnum=1,fdnum=0,ifnum=ifnum
-vec3c1=getdata(0)
-gettp,cold1,plnum=0,fdnum=1,ifnum=ifnum
-vec5c1=getdata(0)
-gettp,cold1,plnum=1,fdnum=1,ifnum=ifnum
-vec7c1=getdata(0)
+case  n_elements(cal_wheel_scans) of
+   3: begin
+      sky = cal_wheel_scans[0]
+      cold1 = cal_wheel_scans[1] 
+      cold2 = cal_wheel_scans[2] 
+      
+      ;;Get sky ch1,ch3,ch5,ch7 for ifnum
+      gettp,sky,plnum=0,fdnum=0,ifnum=ifnum
+      vec1=getdata(0)
+      gettp,sky,plnum=1,fdnum=0,ifnum=ifnum
+      vec3=getdata(0)
+      gettp,sky,plnum=0,fdnum=1,ifnum=ifnum
+      vec5=getdata(0)
+      gettp,sky,plnum=1,fdnum=1,ifnum=ifnum
+      vec7=getdata(0)
+      
+      ;;Get cold1 ch1,ch3,ch5,ch7 for ifnum
+      gettp,cold1,plnum=0,fdnum=0,ifnum=ifnum
+      vec1c1=getdata(0)
+      gettp,cold1,plnum=1,fdnum=0,ifnum=ifnum
+      vec3c1=getdata(0)
+      gettp,cold1,plnum=0,fdnum=1,ifnum=ifnum
+      vec5c1=getdata(0)
+      gettp,cold1,plnum=1,fdnum=1,ifnum=ifnum
+      vec7c1=getdata(0)
 
-;;Get cold2 ch1,ch3,ch5,ch7 for ifnum
-gettp,cold2,plnum=0,fdnum=0,ifnum=ifnum
-vec1c2=getdata(0)
-gettp,cold2,plnum=1,fdnum=0,ifnum=ifnum
-vec3c2=getdata(0)
-gettp,cold2,plnum=0,fdnum=1,ifnum=ifnum
-vec5c2=getdata(0)
-gettp,cold2,plnum=1,fdnum=1,ifnum=ifnum
-vec7c2=getdata(0)
+      ;;Get cold2 ch1,ch3,ch5,ch7 for ifnum
+      gettp,cold2,plnum=0,fdnum=0,ifnum=ifnum
+      vec1c2=getdata(0)
+      gettp,cold2,plnum=1,fdnum=0,ifnum=ifnum
+      vec3c2=getdata(0)
+      gettp,cold2,plnum=0,fdnum=1,ifnum=ifnum
+      vec5c2=getdata(0)
+      gettp,cold2,plnum=1,fdnum=1,ifnum=ifnum
+      vec7c2=getdata(0)      
 
+   end
+
+   1: begin
+      scan = cal_wheel_scans
+
+      gettp,scan,plnum=0,fdnum=0,ifnum=ifnum,quiet=1,wcalpos='Observing'
+      vec1=getdata(0)
+      twarm=!g.s[0].twarm  ; -- gives the warm temperature
+      gettp,scan,plnum=1,fdnum=0,ifnum=ifnum,quiet=1,wcalpos='Observing'
+      vec3=getdata(0)
+      gettp,scan,plnum=0,fdnum=1,ifnum=ifnum,quiet=1,wcalpos='Observing'
+      vec5=getdata(0)
+      gettp,scan,plnum=1,fdnum=1,ifnum=ifnum,quiet=1,wcalpos='Observing'
+      vec7=getdata(0)
+      
+      gettp,scan,plnum=0,fdnum=0,ifnum=ifnum,quiet=1,wcalpos='Cold1'
+      vec1c1=getdata(0)
+      gettp,scan,plnum=1,fdnum=0,ifnum=ifnum,quiet=1,wcalpos='Cold1'
+      vec3c1=getdata(0)
+      gettp,scan,plnum=0,fdnum=1,ifnum=ifnum,quiet=1,wcalpos='Cold1'
+      vec5c1=getdata(0)
+      gettp,scan,plnum=1,fdnum=1,ifnum=ifnum,quiet=1,wcalpos='Cold1'
+      vec7c1=getdata(0)
+
+      gettp,scan,plnum=0,fdnum=0,ifnum=ifnum,quiet=1,wcalpos='Cold2'
+      vec1c2=getdata(0)
+      gettp,scan,plnum=1,fdnum=0,ifnum=ifnum,quiet=1,wcalpos='Cold2'
+      vec3c2=getdata(0)
+      gettp,scan,plnum=0,fdnum=1,ifnum=ifnum,quiet=1,wcalpos='Cold2'
+      vec5c2=getdata(0)
+      gettp,scan,plnum=1,fdnum=1,ifnum=ifnum,quiet=1,wcalpos='Cold2'
+      vec7c2=getdata(0)
+
+
+   end
+   else:   begin
+      message,'No valid cal wheel scans'
+      return, -1
+   end
+end
+
+
+  
 ;;
 ;;Vector Calibration (remove median below) -- watch baselines
 ;;Scalar calibration (use median below)
@@ -77,7 +123,8 @@ tsys3=vec3*gvec3
 tsys5=vec5*gvec5
 tsys7=vec7*gvec7
 
-print,'sky scan, Twarm, Tcold',sky,twarm,tcold
+
+;print,'sky scan, Twarm, Tcold',sky,twarm,tcold
 print,'Median Values across band:'
 print,'Tsys(1,3,5,7)=',median(tsys1),median(tsys3),median(tsys5),median(tsys7)
 
